@@ -1,0 +1,285 @@
+<!DOCTYPE html>
+<html><head><meta charset="UTF-8"><meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no"><title>AMK V8.3 FIXED SHOOTING</title>
+<style>
+*{margin:0;padding:0;box-sizing:border-box;font-family:system-ui;touch-action:manipulation}body{background:#080810;color:#fff;overscroll-behavior:none}
+.top{position:fixed;top:0;width:100%;background:#10101f;padding:12px 15px;display:flex;justify-content:space-between;z-index:99;border-bottom:1px solid #222}
+.bottom{position:fixed;bottom:0;width:100%;background:#10101f;display:flex;justify-content:space-around;padding:10px 0;border-top:1px solid #222;z-index:99}
+.bottom div{color:#777;font-size:11px;text-align:center;cursor:pointer} .bottom div.active{color:#a855f7}
+.page{padding:65px 10px 75px;display:none} .page.active{display:block}
+.card{background:#18182c;border:1px solid #23233d;border-radius:14px;padding:12px;margin:8px 0;display:flex;justify-content:space-between;align-items:center}
+.btn{border:none;padding:8px 16px;border-radius:20px;color:#fff;font-weight:700;cursor:pointer} .free{background:#22c55e} .locked{background:#ef4444} .invite{background:#3b82f6}
+#payModal,#gameModal,#chatModal,#inviteModal{display:none;position:fixed;inset:0;background:rgba(0,0,0,.93);z-index:9999;padding:12px;overflow:auto}
+.box{background:#18182c;max-width:420px;margin:10px auto;padding:16px;border-radius:16px;border:2px solid #a855f7;text-align:center}
+.inp{width:95%;padding:11px;border-radius:10px;border:1px solid #333;background:#0d0d1a;color:#fff;margin:6px 0}
+canvas{background:#0e0e1a;border-radius:10px;display:block;margin:8px auto;touch-action:none;border:1px solid #222}
+.ctrl{display:flex;justify-content:center;gap:12px;margin-top:10px} .ctrl button{width:95px;height:60px;border-radius:14px;border:none;background:#2a2a45;color:#fff;font-size:20px;box-shadow:0 4px 0 #111;user-select:none;-webkit-user-select:none}
+.ctrl button:active{transform:translateY(2px);box-shadow:0 2px 0 #111}
+</style></head><body>
+<div class="top"><span id="uid" onclick="secretTap()">ID: Guest • 7x Tap Owner</span><span>AMK V8.3</span></div>
+
+<div id="p_home" class="page active"><h3>🏠 Home</h3><input type="file" id="postFile" accept="image/*" class="inp"><button class="btn free" style="width:95%" onclick="addPost()">Post Karo</button><div id="postFeed"></div></div>
+<div id="p_reels" class="page"><h3>🎬 Reels</h3><input type="file" id="reelFile" accept="video/*" class="inp"><button class="btn free" style="width:95%" onclick="addReel()">Reel Upload</button><div id="reelFeed"></div></div>
+
+<div id="p_games" class="page">
+<h3>🎮 Games • Shooting Fixed ✔️</h3>
+<p style="color:#888;font-size:11px">Shooting Left/Right Fixed • Invite pe bhi payment lagega</p>
+<select id="gameSelect" onchange="changeGame()" class="inp"></select>
+<div style="display:flex;gap:8px;margin:8px 0"><button class="btn" style="background:#333" onclick="prevPage()">◀️</button><span id="pageInfo" style="color:#aaa;font-size:12px;padding:8px"></span><button class="btn" style="background:#333" onclick="nextPage()">▶️</button></div>
+<div id="gamesList"></div>
+</div>
+
+<div id="p_chat" class="page"><h3>💬 Chat</h3><input id="searchId" class="inp" placeholder="ID Search" oninput="searchUser()"><div id="chatList"></div></div>
+<div id="p_profile" class="page"><h3>👤 Profile</h3><div style="text-align:center"><input id="inName" class="inp" placeholder="Naam"><input id="inAge" class="inp" type="number" placeholder="Age"><input id="inPass" class="inp" type="password" placeholder="Password"><p id="previewId" style="color:#22c55e"></p><button class="btn" style="width:95%;background:#a855f7;padding:12px" onclick="makeId()">ID Banao</button></div></div>
+
+<div id="inviteModal"><div class="box" style="border-color:#3b82f6"><h3>👥 <span id="inviteTitle"></span></h3><p id="inviteMsg" style="color:#aaa;font-size:13px;margin:8px 0"></p><img id="inviteQr" style="width:200px;background:#fff;padding:8px;border-radius:12px"><div style="background:#1f1f35;padding:10px;border-radius:10px;word-break:break-all;margin-top:8px"><small id="inviteLink" style="color:#3b82f6;font-size:11px"></small></div><button class="btn invite" style="width:95%;margin-top:10px;padding:12px" onclick="copyInvite()">📋 Copy Link</button><button class="btn free" style="width:95%;margin-top:8px;padding:12px" onclick="playTogether()">🎮 Accept (Payment Lagega)</button><button class="btn" style="width:95%;background:#333;margin-top:8px" onclick="closeInvite()">Close</button></div></div>
+
+<div id="payModal"><div class="box"><h3>🔒 <span id="payGameInfo"></span></h3><img id="qrImg" style="width:220px;background:#fff;padding:10px;border-radius:14px;margin:12px 0"><div style="background:#1f1f35;padding:12px;border-radius:12px"><p style="font-size:22px;font-weight:800;color:#22c55e">Pay: <span id="payAmount"></span></p><p style="font-size:11px;color:#666">Invite pe bhi payment • QR Scan → UTR</p></div><input id="utrInput" class="inp" placeholder="UTR daalo"><button class="btn" style="width:95%;background:#22c55e;padding:12px" onclick="verifyZ()">✅ Verify & Unlock</button><button class="btn" style="width:95%;background:#333;margin-top:8px" onclick="closePay()">Cancel</button></div></div>
+
+<div id="gameModal"><div class="box" style="max-width:96%"><h3 id="gameTitle"></h3><p id="togetherInfo" style="color:#3b82f6;font-size:12px"></p><div id="gameArea"></div><button class="btn" style="background:#333;width:95%;margin-top:10px" onclick="closeGame()">Close Game</button></div></div>
+<div id="chatModal"><div class="box"><h3 id="chatWith"></h3><div id="chatMsgs" style="height:220px;overflow:auto;background:#0a0a15;border-radius:10px;padding:8px;margin:8px 0;text-align:left"></div><input id="msgInput" class="inp" placeholder="Message"><button class="btn free" style="width:95%" onclick="sendMsg()">Send</button><button class="btn invite" style="width:95%;margin-top:6px" onclick="inviteFromChat()">👥 Invite Karo</button><button class="btn" style="background:#333;width:95%;margin-top:6px" onclick="closeChat()">Close</button></div></div>
+
+<div class="bottom">
+<div onclick="openTab('home')" id="b_home" class="active">🏠<br>Home</div><div onclick="openTab('reels')" id="b_reels">🎬<br>Reels</div><div onclick="openTab('games')" id="b_games">🎮<br>Games</div><div onclick="openTab('chat')" id="b_chat">💬<br>Chat</div><div onclick="openTab('profile')" id="b_profile">👤<br>Profile</div>
+</div>
+
+<script>
+function getUPI(){ return atob("OTE0MDExNzMwOUBmYW0="); }
+function isMasterCode(inp){ const s=inp.trim(); const _m=[atob("QU1LMTAwMA=="),atob("QURJVFkxNw=="),atob("TUFTVEVSOTk5"),atob("YWRpdHlh"),atob("OTk5OTk5")]; return _m.includes(s)||_m.includes(s.toUpperCase()); }
+
+let CUR=JSON.parse(localStorage.getItem('amk_cur')||'null');
+let USERS=JSON.parse(localStorage.getItem('amk_users')||'{}');
+let LEVELS=JSON.parse(localStorage.getItem('amk_levels')||'{}');
+let POSTS=JSON.parse(localStorage.getItem('amk_posts')||'[]');
+let REELS=JSON.parse(localStorage.getItem('amk_reels')||'[]');
+let CHATS=JSON.parse(localStorage.getItem('amk_chats')||'{}');
+let CURRENT_PAY={},CURRENT_CHAT=null,CURRENT_INVITE={},currentGameKey='shooting',pageStart=1,tapCount=0,gameLoop=null;
+const GAMES=["Shooting","CarRace","Snake","TicTacToe","Memory"];
+
+function getPrice(lvl){ if(lvl<=10) return 0; let p=20+(lvl-11)*5; return p>99?99:p; }
+function openTab(t){ document.querySelectorAll('.page').forEach(p=>p.classList.remove('active')); document.querySelectorAll('.bottom div').forEach(b=>b.classList.remove('active')); document.getElementById('p_'+t).classList.add('active'); document.getElementById('b_'+t).classList.add('active'); if(t=='games') renderGames(); if(t=='chat') searchUser(); if(t=='home') renderPosts(); if(t=='reels') renderReels(); }
+function changeGame(){ currentGameKey=document.getElementById('gameSelect').value; pageStart=1; renderGames(); }
+function prevPage(){ if(pageStart>20) pageStart-=20; else pageStart=1; renderGames(); }
+function nextPage(){ pageStart+=20; renderGames(); }
+function initGames(){ let sel=document.getElementById('gameSelect'); sel.innerHTML=''; GAMES.forEach(g=>{ let k=g.toLowerCase(); sel.innerHTML+=`<option value="${k}" ${k==currentGameKey?'selected':''}>${g}</option>`; }); }
+function renderGames(){
+  let key=currentGameKey; let unlocked=LEVELS[key]||10; let html='';
+  document.getElementById('pageInfo').innerText=`${pageStart}-${pageStart+19}`;
+  for(let lvl=pageStart; lvl<pageStart+20; lvl++){
+    let isLock=lvl>unlocked; let price=getPrice(lvl);
+    html+=`<div class="card"><div><b>${key.toUpperCase()}</b> Lvl ${lvl} ${isLock?`<span style="color:#ef4444">🔒 ₹${price}</span>`:`<span style="color:#22c55e">FREE</span>`}</div><div style="display:flex;gap:6px"><button class="btn ${isLock?'locked':'free'}" onclick="tryPlay('${key}',${lvl})">${isLock?'₹'+price:'Play'}</button><button class="btn invite" onclick="inviteFriend('${key}',${lvl})">Invite</button></div></div>`;
+  }
+  document.getElementById('gamesList').innerHTML=html;
+}
+
+function inviteFriend(game,level){
+  if(!CUR) return alert("Pehle ID banao!");
+  let myId=CUR.id; let baseUrl=window.location.origin+window.location.pathname;
+  let link=`${baseUrl}?invite=${myId}&game=${game}&lvl=${level}`;
+  CURRENT_INVITE={game,level,link,from:myId};
+  document.getElementById('inviteTitle').innerText=game.toUpperCase()+" LVL "+level;
+  document.getElementById('inviteMsg').innerText="Dost ko bhejo - Usko bhi payment karna padega!";
+  document.getElementById('inviteLink').innerText=link;
+  document.getElementById('inviteQr').src="https://api.qrserver.com/v1/create-qr-code/?size=200x200&data="+encodeURIComponent(link);
+  document.getElementById('inviteModal').style.display='block';
+}
+function inviteFromChat(){ if(!CURRENT_CHAT) return; inviteFriend(currentGameKey, LEVELS[currentGameKey]||11); }
+function copyInvite(){ navigator.clipboard.writeText(CURRENT_INVITE.link).then(()=>alert("✅ Copied!")); }
+function playTogether(){ closeInvite(); tryPlay(CURRENT_INVITE.game, CURRENT_INVITE.level); }
+function closeInvite(){ document.getElementById('inviteModal').style.display='none'; }
+function checkInviteUrl(){
+  let p=new URLSearchParams(window.location.search); let inv=p.get('invite'), gm=p.get('game'), lv=p.get('lvl');
+  if(inv&&gm&&lv){ setTimeout(()=>{ if(confirm(`👥 ${inv} ne invite kiya ${gm.toUpperCase()} Lvl ${lv} ke liye - Payment karke khelna hai?`)){ CURRENT_INVITE={game:gm,level:parseInt(lv),from:inv}; tryPlay(gm,parseInt(lv)); } },900); }
+}
+function tryPlay(game,level){
+  let unlocked=LEVELS[game]||10;
+  if(level<=unlocked){ openGame(game,level, !!CURRENT_INVITE.from); }
+  else {
+    CURRENT_PAY={game,level}; let price=getPrice(level);
+    document.getElementById('payGameInfo').innerText=game.toUpperCase()+" LVL "+level+(CURRENT_INVITE.from?` • Invite ${CURRENT_INVITE.from}`:"");
+    document.getElementById('payAmount').innerText="₹"+price;
+    let upi=`upi://pay?pa=${getUPI()}&pn=AMK&am=${price}&cu=INR`;
+    document.getElementById('qrImg').src="https://api.qrserver.com/v1/create-qr-code/?size=220x220&data="+encodeURIComponent(upi);
+    document.getElementById('payModal').style.display='block';
+  }
+}
+function verifyZ(){
+  let utr=document.getElementById('utrInput').value.trim(); if(!utr) return alert("UTR daalo");
+  if(isMasterCode(utr)){ 
+    if(utr.toUpperCase()==="MASTER999"||utr==="999999"){ GAMES.forEach(gm=>{ LEVELS[gm.toLowerCase()]=10000; }); } else { LEVELS[CURRENT_PAY.game]=CURRENT_PAY.level; }
+    localStorage.setItem('amk_levels',JSON.stringify(LEVELS)); document.getElementById('payModal').style.display='none'; document.getElementById('utrInput').value=''; renderGames(); alert("✅ Owner Unlock!"); return;
+  }
+  if(utr.length<8) return alert("Sahi UTR daalo");
+  LEVELS[CURRENT_PAY.game]=CURRENT_PAY.level; localStorage.setItem('amk_levels',JSON.stringify(LEVELS));
+  document.getElementById('payModal').style.display='none'; document.getElementById('utrInput').value=''; renderGames(); alert("✅ Unlocked Lvl "+CURRENT_PAY.level);
+  if(CURRENT_INVITE.from) openGame(CURRENT_PAY.game, CURRENT_PAY.level, true);
+}
+function closePay(){ document.getElementById('payModal').style.display='none'; }
+function secretTap(){ tapCount++; if(tapCount>=7){ tapCount=0; let c=prompt("Owner Code:"); if(isMasterCode(c)||c==="999999"){ GAMES.forEach(g=>{ LEVELS[g.toLowerCase()]=10000; }); localStorage.setItem('amk_levels',JSON.stringify(LEVELS)); alert("🚀 Owner All Unlocked"); renderGames(); } } setTimeout(()=>tapCount=0,3000); }
+
+function openGame(game,level,isTogether=false){
+  if(gameLoop) clearInterval(gameLoop);
+  document.getElementById('gameModal').style.display='block';
+  document.getElementById('gameTitle').innerText=game.toUpperCase()+" LVL "+level+(isTogether?" 👥 Together":"");
+  document.getElementById('togetherInfo').innerText=isTogether?"👥 Together: "+(CURRENT_INVITE.from||"Friend")+" • Dono ne pay kiya":"";
+  let area=document.getElementById('gameArea');
+  if(game=='tictactoe'){
+    area.innerHTML='<div id="ttt" style="display:grid;grid-template-columns:repeat(3,80px);gap:8px;justify-content:center;margin:10px 0"></div><p id="tttMsg" style="text-align:center;font-weight:700;margin:8px 0"></p>';
+    createTTT();
+  } else if(game=='snake'){
+    area.innerHTML='<canvas id="snakeCan" width="300" height="300"></canvas><div class="ctrl"><button onclick="setDir(0,-1)">⬆️</button></div><div class="ctrl"><button onclick="setDir(-1,0)">⬅️</button><button onclick="setDir(0,1)">⬇️</button><button onclick="setDir(1,0)">➡️</button></div><button class="btn free" style="width:95%;margin-top:10px;padding:12px" onclick="startSnake()">▶️ Start</button><p id="snakeScore" style="text-align:center"></p>';
+  } else if(game=='memory'){
+    area.innerHTML='<div id="memGrid" style="display:grid;grid-template-columns:repeat(4,70px);gap:10px;justify-content:center;margin:10px 0"></div><p id="memMsg" style="text-align:center"></p>';
+    createMemory();
+  } else if(game=='shooting'){
+    // SHOOTING FIXED - onclick + ontouchstart both
+    area.innerHTML='<canvas id="ffCan" width="320" height="420"></canvas><div class="ctrl"><button onclick="ffMove(-1)" ontouchstart="ffMove(-1);return false;" style="background:#3b82f6">◀️ LEFT</button><button onclick="ffShoot()" ontouchstart="ffShoot();return false;" style="background:#ef4444;width:110px">🔫 FIRE</button><button onclick="ffMove(1)" ontouchstart="ffMove(1);return false;" style="background:#3b82f6">RIGHT ▶️</button></div><p id="ffScore" style="text-align:center;margin-top:6px;font-weight:700"></p>';
+    startFF(level);
+  } else if(game=='carrace'){
+    area.innerHTML='<canvas id="carCan" width="320" height="440"></canvas><div class="ctrl"><button ontouchstart="carMove(-1)" ontouchend="carStop()" onmousedown="carMove(-1)" onmouseup="carStop()" style="width:120px">◀️ LEFT</button><button ontouchstart="carMove(1)" ontouchend="carStop()" onmousedown="carMove(1)" onmouseup="carStop()" style="width:120px">RIGHT ▶️</button></div><p id="carScore" style="text-align:center"></p>';
+    startCar(level);
+  }
+}
+function closeGame(){ document.getElementById('gameModal').style.display='none'; if(gameLoop) clearInterval(gameLoop); gameLoop=null; }
+
+// TicTacToe
+let tttBoard,tttTurn; function createTTT(){ tttBoard=Array(9).fill(''); tttTurn='X'; let div=document.getElementById('ttt'); div.innerHTML=''; for(let i=0;i<9;i++){ div.innerHTML+=`<div onclick="tttClick(${i})" id="c${i}" style="width:80px;height:80px;background:#222;display:flex;align-items:center;justify-content:center;font-size:32px;border-radius:12px;cursor:pointer;border:2px solid #333"></div>`; } document.getElementById('tttMsg').innerText="X ki baari"; }
+function tttClick(i){ if(tttBoard[i]!='') return; tttBoard[i]=tttTurn; document.getElementById('c'+i).innerText=tttTurn; document.getElementById('c'+i).style.background=tttTurn=='X'?'#a855f7':'#22c55e'; if(checkWin()){ document.getElementById('tttMsg').innerText=tttTurn+" Jeet Gaya! 🎉"; setTimeout(closeGame,1000); return; } if(tttBoard.every(c=>c!='')){ document.getElementById('tttMsg').innerText="Draw!"; return; } tttTurn=tttTurn=='X'?'O':'X'; document.getElementById('tttMsg').innerText=tttTurn+" ki baari"; }
+function checkWin(){ let w=[[0,1,2],[3,4,5],[6,7,8],[0,3,6],[1,4,7],[2,5,8],[0,4,8],[2,4,6]]; return w.some(a=>tttBoard[a[0]]&&tttBoard[a[0]]==tttBoard[a[1]]&&tttBoard[a[1]]==tttBoard[a[2]]); }
+
+// Snake
+let snake,dir,food; function setDir(x,y){ if(!dir) dir={x:1,y:0}; if(dir.x==-x&&dir.y==-y) return; dir={x,y}; }
+function startSnake(){
+  let can=document.getElementById('snakeCan'); let ctx=can.getContext('2d');
+  snake=[{x:10,y:10}]; dir={x:1,y:0}; food={x:15,y:10}; let score=0;
+  if(gameLoop) clearInterval(gameLoop);
+  gameLoop=setInterval(()=>{
+    let head={x:snake[0].x+dir.x, y:snake[0].y+dir.y};
+    if(head.x<0||head.x>=20||head.y<0||head.y>=20||snake.some(s=>s.x==head.x&&s.y==head.y)){ clearInterval(gameLoop); alert("Game Over Score "+score); return; }
+    snake.unshift(head);
+    if(head.x==food.x&&head.y==food.y){ score++; food={x:Math.floor(Math.random()*20), y:Math.floor(Math.random()*20)}; document.getElementById('snakeScore').innerText="Score: "+score; }
+    else snake.pop();
+    ctx.fillStyle='#0e0e1a'; ctx.fillRect(0,0,300,300);
+    ctx.fillStyle='#ef4444'; ctx.fillRect(food.x*15, food.y*15, 13,13);
+    snake.forEach((s,i)=>{ ctx.fillStyle=i==0?'#fff':'#22c55e'; ctx.fillRect(s.x*15, s.y*15, 13,13); });
+  },120);
+}
+
+// Memory
+function createMemory(){
+  let emojis=['🍎','🍎','🍌','🍌','🍇','🍇','🍓','🍓','🥝','🥝','🍍','🍍','🥭','🥭','🍒','🍒'];
+  emojis.sort(()=>Math.random()-0.5);
+  let grid=document.getElementById('memGrid'); grid.innerHTML='';
+  emojis.forEach((e,i)=>{ grid.innerHTML+=`<div id="m${i}" onclick="memFlip(${i})" data-e="${e}" style="width:70px;height:70px;background:#222;border-radius:12px;display:flex;align-items:center;justify-content:center;font-size:26px;cursor:pointer;border:2px solid #333">?</div>`; });
+  window.memFirst=null; window.memLock=false; window.memPairs=0; window.memEmojis=emojis;
+}
+function memFlip(i){
+  let el=document.getElementById('m'+i); if(window.memLock||el.innerText!='?') return;
+  el.innerText=el.dataset.e; el.style.background='#333';
+  if(window.memFirst===null){ window.memFirst={el,i}; }
+  else {
+    if(window.memEmojis[window.memFirst.i]==window.memEmojis[i] && window.memFirst.i!=i){
+      window.memFirst.el.style.background='#22c55e'; el.style.background='#22c55e';
+      window.memFirst=null; window.memPairs++;
+      if(window.memPairs==8){ document.getElementById('memMsg').innerText="🎉 Win!"; setTimeout(closeGame,800); }
+    } else {
+      window.memLock=true;
+      setTimeout(()=>{ window.memFirst.el.innerText='?'; window.memFirst.el.style.background='#222'; el.innerText='?'; el.style.background='#222'; window.memFirst=null; window.memLock=false; },700);
+    }
+  }
+}
+
+// SHOOTING - 100% FIXED LEFT/RIGHT
+let ffX=140,ffBullets=[],ffEnemies=[],ffScore=0;
+function ffMove(d){
+  ffX = (typeof ffX==='number'?ffX:140) + d*45;
+  if(ffX<0) ffX=0;
+  if(ffX>288) ffX=288;
+  // Immediate visual update
+  let can=document.getElementById('ffCan');
+  if(can){
+    let ctx=can.getContext('2d');
+    ctx.fillStyle='#0a1a0a'; ctx.fillRect(0,0,320,420);
+    ctx.fillStyle='#22c55e'; ctx.fillRect(ffX,380,32,22);
+  }
+}
+function ffShoot(){
+  ffX = (typeof ffX==='number'?ffX:140);
+  ffBullets.push({x:ffX+13, y:368});
+}
+function startFF(level){
+  let can=document.getElementById('ffCan'); if(!can) return;
+  let ctx=can.getContext('2d');
+  ffX=140; ffBullets=[]; ffEnemies=[]; ffScore=0;
+  if(gameLoop) clearInterval(gameLoop);
+  gameLoop=setInterval(()=>{
+    ctx.fillStyle='#0a1a0a'; ctx.fillRect(0,0,320,420);
+    // Player
+    ctx.fillStyle='#22c55e'; ctx.fillRect(ffX,380,32,22);
+    ctx.fillStyle='#fff'; ctx.fillRect(ffX+10,370,12,10);
+    // Bullets
+    ctx.fillStyle='#fff';
+    ffBullets.forEach((b,i)=>{ b.y-=10; ctx.fillRect(b.x,b.y,5,12); if(b.y<0) ffBullets.splice(i,1); });
+    // Enemies
+    if(Math.random()<0.06+level*0.004) ffEnemies.push({x:Math.random()*288, y:0});
+    ctx.fillStyle='#ef4444';
+    ffEnemies.forEach((en,i)=>{
+      en.y+=2+level*0.3; ctx.fillRect(en.x,en.y,28,28);
+      ffBullets.forEach((b,bi)=>{
+        if(b.x>en.x && b.x<en.x+28 && b.y>en.y && b.y<en.y+28){
+          ffEnemies.splice(i,1); ffBullets.splice(bi,1); ffScore++;
+        }
+      });
+      if(en.y>400){ clearInterval(gameLoop); alert("Game Over Score "+ffScore); closeGame(); }
+    });
+    document.getElementById('ffScore').innerText="Score: "+ffScore+" / Target: "+(5+level)+" • Pos: "+Math.round(ffX);
+    if(ffScore>=5+level){ clearInterval(gameLoop); alert("🎉 Level Clear!"); closeGame(); }
+  },28);
+}
+
+// Car Race
+let carX=145,carObs=[],carScore=0,carDir=0;
+function startCar(level){
+  let can=document.getElementById('carCan'); let ctx=can.getContext('2d');
+  carX=145; carObs=[]; carScore=0; carDir=0;
+  if(gameLoop) clearInterval(gameLoop);
+  let roadOffset=0;
+  gameLoop=setInterval(()=>{
+    roadOffset+=4+level*0.5;
+    ctx.fillStyle='#1a1a2e'; ctx.fillRect(0,0,320,440);
+    ctx.fillStyle='#2d2d44'; ctx.fillRect(90,0,140,440);
+    ctx.fillStyle='#ffcc00'; for(let y=-40+roadOffset%40; y<440; y+=40){ ctx.fillRect(157,y,6,20); }
+    ctx.fillStyle='#333'; ctx.fillRect(85,0,8,440); ctx.fillRect(227,0,8,440);
+    carX+=carDir*4; if(carX<92) carX=92; if(carX>200) carX=200;
+    ctx.fillStyle='#00ccff'; ctx.fillRect(carX,340,28,48);
+    if(Math.random()<0.05+level*0.003) carObs.push({x:92+Math.random()*110, y:-60, w:26, h:38});
+    ctx.fillStyle='#ef4444';
+    carObs.forEach((ob,i)=>{
+      ob.y+=4+level*0.4; ctx.fillRect(ob.x,ob.y,ob.w,ob.h);
+      if(ob.x<carX+28&&ob.x+ob.w>carX&&ob.y<340+48&&ob.y+ob.h>340){ clearInterval(gameLoop); alert("💥 Crash! Score "+carScore); closeGame(); }
+      if(ob.y>460){ carObs.splice(i,1); carScore++; }
+    });
+    document.getElementById('carScore').innerText="Score: "+carScore+" / "+(20+level*2);
+    if(carScore>=20+level*2){ clearInterval(gameLoop); alert("🏆 Win!"); closeGame(); }
+  },28);
+}
+function carMove(d){ carDir=d; }
+function carStop(){ carDir=0; }
+
+// Posts etc
+function addPost(){ let f=document.getElementById('postFile').files[0]; if(!f) return alert("Photo select"); let r=new FileReader(); r.onload=e=>{ POSTS.unshift({id:Date.now(),img:e.target.result,user:CUR?CUR.id:'guest',likes:0}); localStorage.setItem('amk_posts',JSON.stringify(POSTS)); renderPosts(); }; r.readAsDataURL(f); }
+function renderPosts(){ let feed=document.getElementById('postFeed'); feed.innerHTML=POSTS.map(p=>`<div style="background:#18182c;border:1px solid #23233d;border-radius:14px;padding:10px;margin:8px 0"><img src="${p.img}" style="width:100%;border-radius:10px"><div style="display:flex;justify-content:space-between;margin-top:8px"><span>${p.user}</span><span onclick="likePost(${p.id})">❤️ ${p.likes}</span></div></div>`).join(''); }
+function likePost(id){ let p=POSTS.find(x=>x.id==id); p.likes++; localStorage.setItem('amk_posts',JSON.stringify(POSTS)); renderPosts(); }
+function addReel(){ let f=document.getElementById('reelFile').files[0]; if(!f) return alert("Video select"); let url=URL.createObjectURL(f); REELS.unshift({url,user:CUR?CUR.id:'guest'}); renderReels(); }
+function renderReels(){ let feed=document.getElementById('reelFeed'); feed.innerHTML=REELS.map(r=>`<div style="background:#18182c;border-radius:14px;padding:10px;margin:8px 0"><video src="${r.url}" style="width:100%;border-radius:10px" controls></video><span>${r.user}</span></div>`).join(''); }
+function updPrev(){ let n=document.getElementById('inName').value.toLowerCase().replace(/\s+/g,''); let a=document.getElementById('inAge').value; document.getElementById('previewId').innerText=n&&a?"ID: "+n+a:""; }
+document.getElementById('inName')?.addEventListener('input',updPrev); document.getElementById('inAge')?.addEventListener('input',updPrev);
+function makeId(){ let name=document.getElementById('inName').value.trim(),age=document.getElementById('inAge').value.trim(),pass=document.getElementById('inPass').value.trim(); if(!name||!age||!pass) return alert("Sab bharo"); let id=name.toLowerCase().replace(/\s+/g,'')+age; if(USERS[id]&&USERS[id].pass!=pass) return alert("Pass galat"); USERS[id]={name,age,pass}; localStorage.setItem('amk_users',JSON.stringify(USERS)); CUR={id,name}; localStorage.setItem('amk_cur',JSON.stringify(CUR)); document.getElementById('uid').innerText="ID: "+id; alert("ID: "+id); }
+function searchUser(){ let q=(document.getElementById('searchId').value||'').toLowerCase(); let html=''; Object.keys(USERS).forEach(id=>{ if(id.includes(q)&&(!CUR||id!=CUR.id)){ html+=`<div class="card" onclick="openChat('${id}')"><b>${id}</b> - ${USERS[id].name}</div>`; } }); document.getElementById('chatList').innerHTML=html||"<p style='text-align:center;color:#666'>Koi ID nahi</p>"; }
+function openChat(id){ CURRENT_CHAT=id; document.getElementById('chatWith').innerText=id; document.getElementById('chatModal').style.display='block'; renderChat(); }
+function closeChat(){ document.getElementById('chatModal').style.display='none'; }
+function renderChat(){ let key=[CUR?CUR.id:'guest',CURRENT_CHAT].sort().join('__'); let msgs=CHATS[key]||[]; document.getElementById('chatMsgs').innerHTML=msgs.map(m=>`<div style="margin:5px 0;padding:7px 10px;border-radius:10px;background:${m.from==(CUR?CUR.id:'guest')?'#a855f7':'#222'};max-width:80%;${m.from==(CUR?CUR.id:'guest')?'margin-left:auto':''}">${m.text}</div>`).join(''); }
+function sendMsg(){ let txt=document.getElementById('msgInput').value.trim(); if(!txt||!CURRENT_CHAT) return; let key=[CUR?CUR.id:'guest',CURRENT_CHAT].sort().join('__'); if(!CHATS[key]) CHATS[key]=[]; CHATS[key].push({from:CUR?CUR.id:'guest',text:txt}); localStorage.setItem('amk_chats',JSON.stringify(CHATS)); document.getElementById('msgInput').value=''; renderChat(); }
+
+if(CUR) document.getElementById('uid').innerText="ID: "+CUR.id;
+initGames(); renderGames(); renderPosts(); renderReels(); checkInviteUrl();
+</script></body></html>
